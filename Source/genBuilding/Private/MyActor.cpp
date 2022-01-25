@@ -37,9 +37,8 @@ AMyActor::AMyActor()
 
 void AMyActor::test_mesh()
 {
-	FVector p1 = { 0, 0, 0 };
 	fd_test.plan.vertice.Empty();
-	fd_test.add_point(p1);
+	fd_test.travers_plan();
 
 	for (int i = 0; i < fd_test.plan.vertice.Num() - 1; i++) {
 		UE_LOG(LogTemp, Warning, TEXT("plan: %s "), *fd_test.plan.vertice[i + 1].ToString());
@@ -73,7 +72,7 @@ void AMyActor::Tick(float DeltaTime)
 	//UE_LOG(LogTemp, Warning, TEXT("fd_test: %d "), fd_test.plan.vertice.Num());
 
 	for (int i = 0; i < fd_test.plan.vertice.Num() - 1; i++) {
-		DrawDebugLine(GetWorld(), fd_test.plan.vertice[i], fd_test.plan.vertice[i + 1], FColor::Blue, false, -1, 0, 5);
+		DrawDebugLine(GetWorld(), fd_test.plan.vertice[i], fd_test.plan.vertice[i + 1], FColor::Blue, false, -1, 0, 2);
 		if(counter < 1)
 			UE_LOG(LogTemp, Warning, TEXT("tick: %s  --  %s"), *fd_test.plan.vertice[i].ToString(), *fd_test.plan.vertice[i + 1].ToString());
 	}
@@ -81,24 +80,40 @@ void AMyActor::Tick(float DeltaTime)
 	counter++;
 }
 
-void Fundation::add_point(FVector a)
+void Fundation::travers_plan()
+{
+	UE_LOG(LogTemp, Warning, TEXT("\n\n***   BEGIN TEST PLAN   ***"));
+	generic_plan();
+	for(int i = 0; i < plan.vertice.Num() - 1; i++)
+		add_point(plan.vertice[i], plan.vertice[i + 1]);
+}
+
+void Fundation::add_point(FVector a, FVector b)
 {
 	//UE_LOG(LogTemp, Warning, TEXT("%s "), *a.ToString());
 	vertices.Add(a);
-	vertices.Add(FVector(a.X + 100.0, a.Y, a.Z));
-	vertices.Add(FVector(a.X, a.Y + 100.0, a.Z));
+	vertices.Add(b);
+	vertices.Add(FVector(a.X + plan.width_wall, a.Y, a.Z));
+	vertices.Add(FVector(b.X + plan.width_wall, b.Y, a.Z));
 
-	triangles.Add(0);
-	triangles.Add(2);
-	triangles.Add(1);
+	triangles.Add(vertices_counter + 0);
+	triangles.Add(vertices_counter + 1);
+	triangles.Add(vertices_counter + 2);
 
-	uvs.Init(FVector2D(0.0f, 0.0f), 3);
-	normals.Init(FVector(0.0f, 0.0f, 1.0f), 3);
-	vertexColors.Init(FLinearColor(0.0f, 0.0f, 0.0f, 1.0f), 3);
-	tangents.Init(FProcMeshTangent(1.0f, 0.0f, 0.0f), 3);
+	triangles.Add(vertices_counter + 2);
+	triangles.Add(vertices_counter + 1);
+	triangles.Add(vertices_counter + 3);
 
-	UE_LOG(LogTemp, Warning, TEXT("\n\n***   BEGIN TEST PLAN   ***"));
-	generic_plan();
+	vertices_counter += 4;
+
+
+
+	uvs.Init(FVector2D(0.0f, 0.0f), vertices_counter);
+	//uvs.Add(FVector2D)
+	normals.Init(FVector(0.0f, 0.0f, 1.0f), vertices_counter);
+	vertexColors.Init(FLinearColor(0.0f, 0.0f, 0.0f, 1.0f), vertices_counter);
+	tangents.Init(FProcMeshTangent(1.0f, 0.0f, 0.0f), vertices_counter);
+
 	//uvs.Add(FVector2D(0.0f, 0.0f));
 	//uvs.Add(FVector2D(100.0f, 0.0f));
 	//uvs.Add(FVector2D(0.0f, 100.0f));
@@ -107,6 +122,7 @@ void Fundation::add_point(FVector a)
 void Fundation::generic_plan()
 {
 	plan.gen_plan();
+	plan.width_wall = FMath::FRandRange(10.0f, 50.0f);
 }
 
 void Plan::gen_plan()
@@ -122,61 +138,12 @@ void Plan::gen_plan()
 	face.generate(length);
 	left.generate(length);
 	back.generate(length);
-	//for (auto item : right.vertice) {
-	//	UE_LOG(LogTemp, Warning, TEXT("right: %s "), *item.ToString());
-	//	vertice.Add(item);
-	//}
-	//for (auto item : right.vertice) {
-	//	UE_LOG(LogTemp, Warning, TEXT("face: %s "), *item.ToString());
-	//	vertice.Add(item);
-	//}	
-	//TArray<FVector>* arr1 = rotate_left_array(right.vertice, 1);
-	//TArray<FVector>* arr2 = rotate_left_array(right.vertice, 2);
-	//TArray<FVector>* arr3 = rotate_left_array(right.vertice, 3);
-	
-
-	
-
 	for (auto item : face.vertice) 
 		vertice.Add(item);
 
 	append_right(right.vertice);
 	append_back(back.vertice);
 	append_left(left.vertice);
-	//for (auto item : right.vertice) 
-	//	vertice.Add(item);
-
-	//append_left(left.vertice);
-	//for (auto item : left.vertice) 
-	//	vertice.Add(item);
-
-
-}
-
-TArray<FVector>* Plan::rotate_left_array(TArray<FVector>& line, int n)
-{
-	TArray<FVector>* arr = new TArray<FVector>;
-	TArray<FVector>* tmp = new TArray<FVector>;
-
-	for (auto& item : line)
-		tmp->Add(item);
-	for (int j = 0; j < n; j++) {
-		if (j == 2)
-			printf("stop");
-		arr->Empty();
-		//UE_LOG(LogTemp, Warning, TEXT("vertex count: tmp=%d arr=%d"), tmp->Num(), arr->Num());
-
-		FVector last = (*tmp)[tmp->Num() - 1];
-		for (int i = 0; i < tmp->Num(); i++)
-			arr->Add(FVector(last.X - (*tmp)[i].Y, (*tmp)[i].X, 0));
-
-		tmp->Empty();
-		for (auto& item : *arr)
-			tmp->Add(item);
-	}
-	delete tmp;
-	//UE_LOG(LogTemp, Warning, TEXT("vertex count: arr=%d"), arr->Num());
-	return arr;
 }
 
 void Plan::append_left(TArray<FVector>& line)

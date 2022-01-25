@@ -33,9 +33,9 @@ struct PlanSide {
 
 struct Plan {
 	float length;
+	float width_wall;
 	TArray<FVector> vertice;
 	void gen_plan();
-	TArray<FVector>* rotate_left_array(TArray<FVector>& line, int n = 1);
 	void append_left(TArray<FVector>& line);
 	void append_right(TArray<FVector>& line);
 	void append_back(TArray<FVector>& line);
@@ -46,7 +46,7 @@ class Fundation {
 public:
 	Plan plan;
 	UProceduralMeshComponent* pm;
-
+	size_t vertices_counter = 0;
 	UPROPERTY()
 		TArray<FVector> vertices;
 	UPROPERTY()
@@ -60,7 +60,8 @@ public:
 	UPROPERTY()
 		TArray<FProcMeshTangent> tangents;
 
-	void add_point(FVector a);
+	void travers_plan();
+	void add_point(FVector a, FVector b);
 	void generic_plan();
 };
 
